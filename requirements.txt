@@ -1,0 +1,19 @@
+# Gesture Studio - Python dependencies
+# Tested with Python 3.11 on Windows 11 (works with Python 3.9 - 3.12).
+# MediaPipe 0.10.21 is the last release with the classic hand-tracking API this
+# app uses, and it has no wheels for Python 3.13+. See README "Python version".
+mediapipe==0.10.21
+
+# OpenCV (webcam). MediaPipe already depends on the "contrib" build, so we use that
+# one instead of opencv-python to avoid two conflicting copies of cv2.
+# OpenCV 4.12+ requires NumPy 2, which MediaPipe 0.10.21 does not support.
+opencv-contrib-python>=4.8,<4.12
+
+# Sound output (the synth itself is written with NumPy/SciPy).
+pygame>=2.5
+numpy>=1.24,<2
+# Used for the synth's brightness filter. Already installed as part of MediaPipe.
+scipy>=1.10
+
+# The interface is plain HTML/CSS/JavaScript served by Python's built-in web server:
+# no extra packages are needed for it.

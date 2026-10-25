@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gesture Studio</title>
+  <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="/static/logo.svg" alt="" width="28" height="28">
+      <span>Gesture Studio</span>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="Mode">
+      <button role="tab" data-view="synth">Synth</button>
+      <button role="tab" data-view="free">Free Play</button>
+      <button role="tab" data-view="songs">My Songs</button>
+      <button role="tab" data-view="settings">Settings</button>
+    </nav>
+
+    <div class="topbar-right">
+      <span class="status" id="cam-status" title="Camera"><i></i><span>Camera</span></span>
+      <span class="status" id="audio-status" title="Sound"><i></i><span>Sound</span></span>
+      <button class="icon-btn" id="help-btn" aria-label="How to play" title="How to play">?</button>
+      <button class="mute-btn" id="mute-btn" aria-pressed="false" title="Mute (Space)">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="cross" d="M16 9l6 6M22 9l-6 6"/></svg>
+        <span>Mute</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============================== PLAY VIEW (Synth / Free Play / a song) -->
+  <main class="play" id="play-view">
+    <!-- The camera fills the whole window; everything else floats on top, see-through. -->
+    <div class="video-card" id="video-card">
+      <img id="video" alt="Live camera view" src="/video.mjpg">
+      <canvas id="overlay" aria-hidden="true"></canvas>
+      <div class="video-hint" id="video-hint">Show your hands, palms facing the camera</div>
+      <div class="video-empty" id="video-empty" hidden>
+        <h3 id="video-empty-title">Starting camera…</h3>
+        <p id="video-empty-text"></p>
+        <ul id="video-empty-help"></ul>
+        <button class="btn" id="camera-retry">Try again</button>
+      </div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+
+    <aside class="guide" id="guide-harmony" aria-label="Harmony hand guide">
+      <div class="guide-head">
+        <span class="hand-tag harmony" data-hand="harmony">Left hand</span>
+        <h2>Chords</h2>
+      </div>
+      <ol class="rows"></ol>
+      <p class="guide-foot"></p>
+    </aside>
+
+    <section class="stage">
+      <div class="now" id="now">
+        <div class="now-main">
+          <div class="headline" id="headline"></div>
+          <div class="now-text">
+            <div class="now-title" id="now-title"></div>
+            <div class="now-caption" id="now-caption"></div>
+            <div class="now-detail" id="now-detail"></div>
+          </div>
+        </div>
+        <div class="now-notes" id="now-notes" aria-label="Notes playing"></div>
+      </div>
+
+      <!-- Song guide, kept small: the chords, the sections and the key. You play every chord. -->
+      <div class="song-panel" id="song-panel" hidden>
+        <div class="chord-strip" id="chord-strip"></div>
+        <div class="transport">
+          <button class="round-btn" id="song-back" title="All songs" aria-label="All songs">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+          <button class="round-btn" id="song-restart" title="Back to the first chord (R)" aria-label="Back to the first chord">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2-4.9M5 4v4h4"/></svg></button>
+          <div class="form-strip" id="song-sections" aria-label="Sections"></div>
+          <div class="key-stepper" title="Transpose the whole song">
+            <span>Key</span>
+            <div class="stepper" id="song-key">
+              <button data-step="-1" aria-label="Key down a semitone">−</button><output></output><button data-step="1" aria-label="Key up a semitone">+</button>
+            </div>
+          </div>
+          <button class="round-btn" id="song-edit" title="Edit this song" aria-label="Edit this song">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="guide" id="guide-sound" aria-label="Sound hand guide">
+      <div class="guide-head">
+        <span class="hand-tag sound" data-hand="sound">Right hand</span>
+        <h2>Sound</h2>
+      </div>
+      <ol class="rows"></ol>
+      <div class="meters" id="sound-meters">
+        <div class="meter"><span>Volume</span><div><i id="meter-volume"></i></div></div>
+        <div class="meter"><span>Brightness</span><div><i id="meter-bright"></i></div></div>
+      </div>
+      <p class="guide-foot"></p>
+    </aside>
+  </main>
+
+  <!-- ============================================== SONG PICKER -->
+  <section class="songs-view" id="songs-view" hidden>
+    <div class="page-head">
+      <h1>My Songs</h1>
+      <p>Look up a song's chords, type them in, and play them with your hands. Each chord gets its own hand sign.</p>
+    </div>
+    <div class="song-grid" id="song-grid"></div>
+  </section>
+
+  <!-- ============================================== SONG EDITOR -->
+  <dialog id="editor">
+    <form class="help-body editor" id="editor-form">
+      <h2 id="editor-title">New song</h2>
+      <div class="editor-row">
+        <label>Title<input type="text" id="ed-title" maxlength="80" placeholder="Song title" autocomplete="off" required></label>
+        <label><span>Artist <small>(optional)</small></span><input type="text" id="ed-artist" maxlength="80" autocomplete="off"></label>
+      </div>
+      <h3>Chords</h3>
+      <p class="note">One section per row, chords in the order they are played. Separate chords with spaces, e.g. <b>C G Am F</b>. Slash chords (G/B), sevenths (Am7, Cmaj7) and sus chords work too.</p>
+      <ol class="ed-sections" id="ed-sections"></ol>
+      <button class="btn subtle" type="button" id="ed-add">+ Add section</button>
+      <div class="ed-preview" id="ed-preview" aria-live="polite"></div>
+      <div class="help-actions">
+        <button class="btn subtle danger" type="button" id="ed-delete" hidden>Delete song</button>
+        <span class="spacer"></span>
+        <button class="btn subtle" type="button" id="ed-cancel">Cancel</button>
+        <button class="btn primary" type="submit" id="ed-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ============================================== SETTINGS -->
+  <section class="settings-view" id="settings-view" hidden>
+    <div class="page-head">
+      <h1>Settings</h1>
+      <p>Changes are saved automatically.</p>
+    </div>
+    <div class="settings-grid">
+      <div class="card">
+        <h3>Camera</h3>
+        <div class="field">
+          <label for="set-camera">Camera</label>
+          <div class="inline">
+            <select id="set-camera"></select>
+            <button class="btn subtle" id="scan-cameras">Find cameras</button>
+          </div>
+        </div>
+        <div class="field toggle-field"><span>Mirror preview<small>Move like in a mirror</small></span><button class="switch" data-setting="mirror" role="switch"></button></div>
+        <p class="note" id="camera-note"></p>
+      </div>
+
+      <div class="card">
+        <h3>Gestures</h3>
+        <div class="field">
+          <label for="set-steadiness">Gesture sensitivity</label>
+          <input type="range" id="set-steadiness" min="1" max="5" step="1" data-setting="steadiness">
+          <div class="scale-labels"><span>Quick</span><span>Steady</span></div>
+        </div>
+        <div class="field toggle-field"><span>Left-handed<small>Right hand picks chords, left hand shapes sound</small></span><button class="switch" data-setting="swap_hands" role="switch"></button></div>
+        <div class="field toggle-field"><span>Tilt for brightness<small>Tilt the sound hand to brighten or darken</small></span><button class="switch" data-setting="tilt_filter" role="switch"></button></div>
+        <div class="field toggle-field"><span>Tilt for minor<small>Lean the chord hand outward for minor</small></span><button class="switch" data-setting="tilt_minor" role="switch"></button></div>
+        <div class="field toggle-field"><span>Hand outlines<small>Draw tracked hands on the video</small></span><button class="switch" data-setting="show_hand_outlines" role="switch"></button></div>
+      </div>
+
+      <div class="card">
+        <h3>Sound</h3>
+        <div class="field">
+          <label for="set-preset">Default sound</label>
+          <select id="set-preset" data-setting="default_preset"></select>
+        </div>
+        <div class="field">
+          <label for="set-repeat">Piano repeat <small>A held piano note is struck again every <output id="repeat-value"></output></small></label>
+          <input type="range" id="set-repeat" min="0.15" max="1.5" step="0.05" data-setting="piano_repeat">
+          <div class="scale-labels"><span>Fast</span><span>Slow</span></div>
+        </div>
+        <div class="field">
+          <label>Default octave</label>
+          <div class="stepper" id="set-octave">
+            <button data-step="-1" aria-label="Lower">−</button><output></output><button data-step="1" aria-label="Higher">+</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Scale</label>
+          <div class="segmented" data-action="scale">
+            <button data-value="major">Major</button><button data-value="minor">Minor</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="set-volume">Volume</label>
+          <input type="range" id="set-volume" min="0" max="1" step="0.01" data-volume>
+        </div>
+        <div class="field"><span class="note" id="audio-note"></span>
+          <button class="btn subtle" id="restart-audio" hidden>Restart sound</button></div>
+      </div>
+
+      <div class="card">
+        <h3>Guides</h3>
+        <div class="field toggle-field"><span>Chord hand guide</span><button class="switch" data-setting="show_left_guide" role="switch"></button></div>
+        <div class="field toggle-field"><span>Sound hand guide</span><button class="switch" data-setting="show_right_guide" role="switch"></button></div>
+      </div>
+
+      <div class="card wide" id="calibration">
+        <h3>Gesture check</h3>
+        <p class="note">Hold up a gesture and check which fingers are detected. If a gesture is misread, try the tips below.</p>
+        <div class="calib-hands">
+          <div class="calib-hand" data-role="harmony"></div>
+          <div class="calib-hand" data-role="sound"></div>
+        </div>
+        <div class="field">
+          <label for="set-thumb">Thumb detection</label>
+          <input type="range" id="set-thumb" min="0.3" max="1.2" step="0.05" data-setting="thumb_sensitivity">
+          <div class="scale-labels"><span>Thumb counts easily</span><span>Thumb must stick out</span></div>
+        </div>
+        <ul class="tips">
+          <li><b>4 fingers shows as Open hand?</b> Move the slider right, or tuck your thumb into your palm.</li>
+          <li><b>Open hand shows as 4 fingers?</b> Move the slider left and spread your thumb wide.</li>
+          <li><b>Gestures flicker?</b> Set gesture sensitivity towards Steady and use even light from the front.</li>
+          <li><b>Hands swapped?</b> Turn Mirror preview on, or switch Left-handed.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== CONTROL DOCK -->
+  <footer class="dock" id="dock">
+    <div class="dock-group">
+      <label class="dock-label optional" for="preset">Sound</label>
+      <select id="preset" class="preset-select"></select>
+    </div>
+
+    <div class="dock-group" data-modes="synth free">
+      <label class="dock-label" for="key">Key</label>
+      <select id="key" class="compact"></select>
+      <div class="segmented" data-action="scale">
+        <button data-value="major">Major</button><button data-value="minor">Minor</button>
+      </div>
+    </div>
+
+    <div class="dock-group" data-modes="synth free songs">
+      <span class="dock-label">Octave</span>
+      <div class="stepper" id="octave">
+        <button data-step="-1" aria-label="Lower octave">−</button><output></output><button data-step="1" aria-label="Higher octave">+</button>
+      </div>
+    </div>
+
+    <div class="dock-group" data-modes="synth songs">
+      <span class="dock-label optional">Expression</span>
+      <div class="segmented" data-action="expression">
+        <button data-value="gesture">Hands</button><button data-value="manual">Manual</button>
+      </div>
+    </div>
+
+    <div class="dock-group manual-only" data-modes="synth songs">
+      <select id="voicing" class="compact" aria-label="Voicing"></select>
+      <div class="segmented" data-action="register" aria-label="Register">
+        <button data-value="-1">Low</button><button data-value="0">Mid</button><button data-value="1">High</button>
+      </div>
+      <label class="mini-slider" title="Brightness"><span>Bright</span><input type="range" id="brightness" min="0" max="1" step="0.01"></label>
+    </div>
+
+    <div class="dock-group volume">
+      <span class="dock-label">Volume</span>
+      <input type="range" id="volume" min="0" max="1" step="0.01" data-volume aria-label="Volume">
+    </div>
+  </footer>
+
+  <!-- ============================================== HELP -->
+  <dialog id="help">
+    <form method="dialog" class="help-body">
+      <h2>How to play</h2>
+      <ol class="steps">
+        <li><b>Left hand picks the chord.</b> Show 1, 2, 3, 4 or 5 fingers, the rock sign or the shaka. Close your fist to stop.</li>
+        <li><b>Right hand shapes the sound.</b> Raise it to get louder, lower it to fade. Finger shapes change the chord's colour.</li>
+        <li><b>Sing along.</b> Chords keep ringing as long as you hold the shape. Two fists stop everything.</li>
+      </ol>
+      <h3>Gestures</h3>
+      <div class="help-gestures" id="help-gestures"></div>
+      <h3>Keyboard</h3>
+      <div class="keys">
+        <span><kbd>Space</kbd> Mute</span><span><kbd>Esc</kbd> Stop all</span><span><kbd>1</kbd>–<kbd>4</kbd> Switch tabs</span>
+        <span><kbd>↑</kbd><kbd>↓</kbd> Volume</span><span><kbd>[</kbd><kbd>]</kbd> Octave</span><span><kbd>R</kbd> Back to a song's first chord</span>
+      </div>
+      <div class="help-actions">
+        <button class="btn subtle" type="button" id="open-calibration">Gesture not recognised?</button>
+        <button class="btn primary" value="close">Got it</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

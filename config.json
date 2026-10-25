@@ -1,0 +1,47 @@
+{
+  "_comment": "Advanced options. Everyday preferences are in the app's Settings screen (saved to user_settings.json). Your song guides are saved to my_songs.json. Restart the app after editing this file.",
+
+  "camera": {
+    "index": 0,
+    "width": 640,
+    "height": 480
+  },
+
+  "detection": {
+    "min_detection_confidence": 0.6,
+    "min_tracking_confidence": 0.5,
+    "model_complexity": 0
+  },
+
+  "trigger": {
+    "_comment": "Minimum time between two one-shot gesture actions (e.g. register up/down).",
+    "cooldown_seconds": 0.12
+  },
+
+  "audio": {
+    "_comment": "chunk_size: lower = less delay, higher = safer on slow computers (256-2048).",
+    "sample_rate": 44100,
+    "chunk_size": 1024
+  },
+
+  "free_play": {
+    "_comment": "Gesture -> note. A number 1-7 is a step of the chosen scale (follows the key you pick). A note like \"C4\" is always that note.",
+    "gesture_notes": {
+      "one": 1,
+      "two": 2,
+      "three": 3,
+      "four": 4,
+      "palm": 5,
+      "rock": 6,
+      "shaka": 7
+    }
+  },
+
+  "interface": {
+    "port": 8765,
+    "open_window": true,
+    "quit_when_window_closed": true
+  },
+
+  "songs_file": "my_songs.json"
+}

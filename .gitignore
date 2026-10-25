@@ -1,0 +1,10 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Personal files: your preferences and your song guides stay on your computer
+user_settings.json
+user_settings.json.tmp
+my_songs.json
+my_songs.json.tmp
